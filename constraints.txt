@@ -301,8 +301,45 @@
 {
 "location": "AUTO_TRIGGER",
 "accessibility": "vfar",
-"entry_prereq": "POST_GAME & IMPOSSIBLE",
-"exit_prereq": "NONE",
+"entry_prereq": "
+POST_GAME & SLIDING_POWDER &
+((
+    // Enter the library normally
+    ((AIR_JUMP & (RABI_SLIPPERS | ADVANCED)) | (AIR_DASH & RABI_SLIPPERS)) &
+    // Cross/ climb the large gap
+    (
+        (AIR_DASH & AIR_JUMP & WALL_JUMP_LV2) |
+        ((AIR_DASH | AIR_JUMP) & ADVANCED & ((RABI_SLIPPERS & BUNNY_STRIKE) | BUNNY_WHIRL))
+    )
+) | (
+    // Amulet climb from Sky Island Town
+    // May require slide and explosives to avoid Irisu
+    STUPID & AIR_JUMP & WALL_JUMP_LV2 & AIR_DASH
+) | (
+    ZIP & SLIDING_POWDER & ADVANCED & (SUNNY_BEAM | STUPID)
+))
+",
+"exit_prereq": "
+(
+    (SLIDING_POWDER & ZIP) |
+    ((CARROT_BOMB | (CARROT_SHOOTER & BOOST)) & (SLIDING_POWDER | (HAMMER_ROLL_LV3 & ZIP)))
+) & ((
+        // shaft
+        (BUNNY_WHIRL & (STUPID | (WALL_JUMP & ADVANCED))) |
+        (AIR_JUMP & WALL_JUMP_LV2) |
+        ((AIR_JUMP | WALL_JUMP_LV2) & RABI_SLIPPERS & BUNNY_STRIKE & ADVANCED)
+    ) | (
+        (
+            AIR_JUMP |
+            (WALL_JUMP_LV2 & (
+                AIR_DASH |
+                (RABI_SLIPPERS & (ADVANCED | SPEED_BOOST)) |
+                (BUNNY_STRIKE & ADVANCED & (STUPID | SPEED_BOOST))
+            ))
+        ) & (SLIDING_POWDER & ZIP)
+    )
+)
+",
 }
 
 {
@@ -418,8 +455,40 @@ DARKNESS &
 {
 "location": "HITBOX_DOWN",
 "accessibility": "vfar",
-"entry_prereq": "POST_GAME & CARROT_BOMB & IMPOSSIBLE",
-"exit_prereq": "NONE",
+"entry_prereq": "
+POST_GAME &
+// Enter the library
+(
+    ((AIR_JUMP & (RABI_SLIPPERS | ADVANCED)) | (AIR_DASH & RABI_SLIPPERS)) |
+    // May require slide and explosives to avoid Irisu
+    (STUPID & AIR_JUMP & WALL_JUMP_LV2 & AIR_DASH) |
+    (ZIP & SLIDING_POWDER & ADVANCED & (SUNNY_BEAM | STUPID))
+) & ((
+    // intended route
+    CARROT_BOMB & (
+    // two ledges
+        (AIR_JUMP & (RABI_SLIPPERS | (BUNNY_STRIKE & ADVANCED))) |
+        (WALL_JUMP_LV2 & (
+            AIR_JUMP |
+            (RABI_SLIPPERS & (ADVANCED | SPEED_BOOST)) |
+            (BUNNY_STRIKE & ADVANCED & (STUPID | SPEED_BOOST))
+        ))
+    )) |
+    // from directly beneath
+    (STUPID & CARROT_SHOOTER & BOOST)
+)
+",
+"exit_prereq": "
+((CARROT_BOMB | CARROT_SHOOTER) &  (
+    (AIR_DASH & AIR_JUMP & WALL_JUMP_LV2) |
+    ((AIR_DASH | AIR_JUMP) & ADVANCED & ((RABI_SLIPPERS & BUNNY_STRIKE) | (BUNNY_WHIRL & ADVANCED)))
+) & (
+// shaft
+    (BUNNY_WHIRL & (STUPID | (WALL_JUMP & ADVANCED))) |
+    (AIR_JUMP & WALL_JUMP_LV2) |
+    ((AIR_JUMP | WALL_JUMP_LV2) & RABI_SLIPPERS & BUNNY_STRIKE & ADVANCED)
+)) | (SLIDING_POWDER & ZIP)
+",
 }
 
 {
@@ -1635,8 +1704,34 @@ SLIDING_POWDER & DARKNESS &
 {
 "location": "EGG_LIBRARY",
 "accessibility": "vfar",
-"entry_prereq": "POST_GAME & IMPOSSIBLE",
-"exit_prereq": "NONE",
+"entry_prereq": "
+POST_GAME &
+(
+    ((AIR_JUMP & (RABI_SLIPPERS | ADVANCED)) | (AIR_DASH & RABI_SLIPPERS)) |
+    //May require slide and explosives to avoid Irisu
+    (STUPID & AIR_JUMP & WALL_JUMP_LV2 & AIR_DASH) |
+    //Library zip is dumb
+    (ZIP & SLIDING_POWDER & ADVANCED & (SUNNY_BEAM | STUPID) & (AIR_JUMP | BUNNY_STRIKE | RABI_SLIPPERS | STUPID))
+)
+",
+"exit_prereq": "
+// shaft
+((
+    (BUNNY_WHIRL & (STUPID | (WALL_JUMP & ADVANCED))) |
+    (AIR_JUMP & WALL_JUMP_LV2) |
+    ((AIR_JUMP | WALL_JUMP_LV2) & RABI_SLIPPERS & BUNNY_STRIKE & ADVANCED)
+)
+& (CARROT_BOMB | CARROT_SHOOTER)
+) | ((
+// ledge
+    AIR_JUMP |
+    (WALL_JUMP_LV2 & (
+        AIR_DASH |
+        (RABI_SLIPPERS & (ADVANCED | SPEED_BOOST)) |
+        (BUNNY_STRIKE & ADVANCED & (STUPID | SPEED_BOOST))
+    ))
+) & (SLIDING_POWDER & ZIP))
+",
 }
 
 {
