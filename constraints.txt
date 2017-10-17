@@ -1260,7 +1260,13 @@ DARKNESS
 {
 "location": "CYBER_FLOWER",
 "accessibility": "far",
-"entry_prereq": "POST_GAME & IMPOSSIBLE",
+"entry_prereq": "POST_GAME &
+((
+    (CARROT_BOMB | (CARROT_SHOOTER & BOOST)) &
+    (AIR_JUMP & WALL_JUMP_LV2 & (SLIDING_POWDER | AIR_DASH | STUPID))
+) | (
+    AIR_JUMP & WALL_JUMP_LV2 & BUNNY_WHIRL & STUPID
+))",
 "exit_prereq": "NONE",
 }
 
@@ -2006,6 +2012,6 @@ POST_GAME &
 {
 "location": "EGG_SYSINT2",
 "accessibility": "vfar",
-"entry_prereq": "POST_GAME & IMPOSSIBLE",
-"exit_prereq": "NONE",
+"entry_prereq": "POST_GAME & (CARROT_BOMB | (CARROT_SHOOTER & BOOST)) & (AIR_JUMP & WALL_JUMP_LV2 & (SLIDING_POWDER | AIR_DASH | STUPID))",
+"exit_prereq": "(SLIDING_POWDER | CARROT_BOMB | (CARROT_SHOOTER & BOOST)) & (AIR_JUMP & (RABI_SLIPPERS | WALL_JUMP_LV2))",
 }
