@@ -88,19 +88,9 @@ def define_custom_items():
             "entry_prereq": "HAMMER_ROLL & SHOP",
             "exit_prereq": "NONE",
         },
-        "BUNNY_STRIKE": {
-            "accessibility": "free",
-            "entry_prereq": "SLIDING_POWDER & SHOP",
-            "exit_prereq": "NONE",
-        },
         "AIR_DASH_LV3": {
             "accessibility": "free",
             "entry_prereq": "AIR_DASH & SHOP",
-            "exit_prereq": "NONE",
-        },
-        "SPEED_BOOST": {
-            "accessibility": "free",
-            "entry_prereq": "SHOP",
             "exit_prereq": "NONE",
         },
         "PIKO_HAMMER_LEVELED": {
@@ -835,6 +825,14 @@ def get_all_warnings(assigned_locations):
 # assigned_locations: item_name -> location map for analysis purposes.
 def run_item_randomizer(seed=None, config_file='config.txt', egg_goals=False):
     items = read_items()
+    # this is a hack to randomize items given by events
+    # out of laziness, this will replace the last three items
+    # these should always be eggs given the format of all_items.txt
+    if True: # XXX
+        items[-3].name = "SPEED_BOOST"
+        items[-2].name = "BUNNY_STRIKE"
+        items[-1].name = "P_HAIRPIN"
+
     custom_items = define_custom_items()
     locations = [item.name for item in items] + list(custom_items.keys())
     item_names = locations
@@ -927,6 +925,9 @@ def configure_shaft(mod, apply_fixes, open_mode, super_attack_mode, hyper_attack
         for i in range(0,20):
             events_list.append((558, 5223-i, 5001))
         print('Super attack mode applied')
+
+    # XXX Skip events that would otherwise give items
+    events_list += [(525,), (374,), (378,), (453,), (524,)]
 
     # Build shaft only if there is something to build.
     if len(events_list) > 0:
