@@ -37,6 +37,7 @@ def parse_args():
     args.add_argument('--hide-difficulty', action='store_true', help='Hide difficulty rating. Affects seed.')
     args.add_argument('--egg-goals', action='store_true', help='Egg goals mode. Hard-to-reach items are replaced with easter eggs. All other eggs are removed from the map.')
     args.add_argument('-extra-eggs', default=None, type=int, help='Number of extra randomly-chosen eggs for egg-goals mode (in addition to the hard-to-reach eggs)')
+    args.add_argument('--shuffle-miriam-items', action='store_true', help='Shuffle the items that Miriam would normally give away or sell.')
 
     return args.parse_args(sys.argv[1:])
 
@@ -825,13 +826,6 @@ def get_all_warnings(assigned_locations):
 # assigned_locations: item_name -> location map for analysis purposes.
 def run_item_randomizer(seed=None, config_file='config.txt', egg_goals=False):
     items = read_items()
-    # this is a hack to randomize items given by events
-    # out of laziness, this will replace the last three items
-    # these should always be eggs given the format of all_items.txt
-    if True: # XXX
-        items[-3].name = "SPEED_BOOST"
-        items[-2].name = "BUNNY_STRIKE"
-        items[-1].name = "P_HAIRPIN"
 
     custom_items = define_custom_items()
     locations = [item.name for item in items] + list(custom_items.keys())
@@ -905,12 +899,44 @@ def apply_open_mode_fixes(areaid, data):
         # Trigger blocking going to beach from start
         data.tiledata_event = [0 if x==301 else x for x in data.tiledata_event]
 
-def configure_shaft(mod, apply_fixes, open_mode, super_attack_mode, hyper_attack_mode):
+def apply_event_item_fixes(areaid, data):
+    if areaid == 5:
+        # Remove unused door events
+        data.tiledata_event[xy_to_index(176,120)] = 0
+        data.tiledata_event[xy_to_index(177,120)] = 0
+
+        # Build new store room's collision
+        t_clear = []
+        t_clear += [(x,119) for x in range(179,183)]
+        t_clear += [(x,120) for x in range(179,183)]
+        for (x,y) in t_clear:
+            data.tiledata_map[xy_to_index(x,y)] = 0
+            data.tiledata_tiles1[xy_to_index(x,y)] = 0
+        t_collision = [(169,118), (169,119), (170,119)]
+        t_collision += [(2*x,118) for x in range(85,90)]
+        for (x,y) in t_collision:
+            data.tiledata_map[xy_to_index(x,y)] = 1
+            data.tiledata_tiles1[xy_to_index(x,y)] = 33
+        # TODO: make it pretty
+
+def configure_shaft(mod, apply_fixes, open_mode, super_attack_mode, hyper_attack_mode, shuffle_miriam_items):
     events_list = []
+
+    # Split the NOEVENT events to reduce duplication
+    if apply_fixes or shuffle_miriam_items:
+        events_list.append((525,))
 
     if apply_fixes:
         # Turn on warp stones from the start
-        events_list += [(525,), (281,), (524,)]
+        events_list.append((281,))
+
+    # Skip events that would otherwise give items
+    if shuffle_miriam_items:
+        events_list += [(374,), (378,),]
+    #XXX P Hairpin: (453,)
+
+    if apply_fixes or shuffle_miriam_items:
+        events_list.append((524,))
 
     if open_mode:
         # Add ribbon
@@ -925,9 +951,6 @@ def configure_shaft(mod, apply_fixes, open_mode, super_attack_mode, hyper_attack
         for i in range(0,20):
             events_list.append((558, 5223-i, 5001))
         print('Super attack mode applied')
-
-    # XXX Skip events that would otherwise give items
-    events_list += [(525,), (374,), (378,), (453,), (524,)]
 
     # Build shaft only if there is something to build.
     if len(events_list) > 0:
@@ -980,7 +1003,7 @@ def build_start_game_shaft(areaid, data, events_list):
 
 
 
-def pre_modify_map_data(mod, apply_fixes, open_mode, shuffle_music, shuffle_backgrounds, no_laggy_backgrounds, no_difficult_backgrounds, super_attack_mode, hyper_attack_mode):
+def pre_modify_map_data(mod, apply_fixes, open_mode, shuffle_music, shuffle_backgrounds, no_laggy_backgrounds, no_difficult_backgrounds, super_attack_mode, hyper_attack_mode, shuffle_miriam_items):
     # apply rando fixes
     if apply_fixes:
         for areaid, data in mod.stored_datas.items():
@@ -992,6 +1015,11 @@ def pre_modify_map_data(mod, apply_fixes, open_mode, shuffle_music, shuffle_back
             apply_open_mode_fixes(areaid, data)
         print('Open mode applied')
 
+    if shuffle_miriam_items:
+        for areaid, data in mod.stored_datas.items():
+            apply_event_item_fixes(areaid, data)
+        print('Miriam item fixes applied')
+
     # Note: because musicrandomizer requires room color info, the music
     # must be shuffled before the room colors!
 
@@ -1002,7 +1030,7 @@ def pre_modify_map_data(mod, apply_fixes, open_mode, shuffle_music, shuffle_back
         backgroundrandomizer.shuffle_backgrounds(mod.stored_datas, no_laggy_backgrounds, no_difficult_backgrounds)
 
     # Add shaft if needed
-    configure_shaft(mod=mod, apply_fixes=apply_fixes, open_mode=open_mode, super_attack_mode=super_attack_mode, hyper_attack_mode=hyper_attack_mode)
+    configure_shaft(mod=mod, apply_fixes=apply_fixes, open_mode=open_mode, super_attack_mode=super_attack_mode, hyper_attack_mode=hyper_attack_mode, shuffle_miriam_items=shuffle_miriam_items)
 
 def remove_non_goal_eggs(analyzer, assigned_locations, items, extra_eggs):
     all_eggs = set(filter(is_egg, assigned_locations.keys()))
@@ -1021,7 +1049,7 @@ def remove_non_goal_eggs(analyzer, assigned_locations, items, extra_eggs):
 def get_default_areaids():
     return list(range(10))
 
-def generate_randomized_maps(seed, source_dir, output_dir, config_file, write_to_map_files, shuffle_music, shuffle_backgrounds, no_laggy_backgrounds, no_difficult_backgrounds, super_attack_mode, hyper_attack_mode, apply_fixes, open_mode, egg_goals, extra_eggs, hide_unreachable, hide_difficulty):
+def generate_randomized_maps(seed, source_dir, output_dir, config_file, write_to_map_files, shuffle_music, shuffle_backgrounds, no_laggy_backgrounds, no_difficult_backgrounds, super_attack_mode, hyper_attack_mode, apply_fixes, open_mode, egg_goals, extra_eggs, hide_unreachable, hide_difficulty, shuffle_miriam_items):
     if write_to_map_files and not os.path.isdir(output_dir):
         fail('Output directory %s does not exist' % output_dir)
 
@@ -1051,7 +1079,7 @@ def generate_randomized_maps(seed, source_dir, output_dir, config_file, write_to
     itemreader.grab_original_maps(source_dir, output_dir)
     print('Maps copied...')
     mod = itemreader.ItemModifier(areaids, source_dir=source_dir, no_load=True)
-    pre_modify_map_data(mod, apply_fixes=apply_fixes, open_mode=open_mode, shuffle_music=shuffle_music, shuffle_backgrounds=shuffle_backgrounds, no_laggy_backgrounds=no_laggy_backgrounds, no_difficult_backgrounds=no_difficult_backgrounds, super_attack_mode=super_attack_mode, hyper_attack_mode=hyper_attack_mode)
+    pre_modify_map_data(mod, apply_fixes=apply_fixes, open_mode=open_mode, shuffle_music=shuffle_music, shuffle_backgrounds=shuffle_backgrounds, no_laggy_backgrounds=no_laggy_backgrounds, no_difficult_backgrounds=no_difficult_backgrounds, super_attack_mode=super_attack_mode, hyper_attack_mode=hyper_attack_mode, shuffle_miriam_items=shuffle_miriam_items)
     apply_item_specific_fixes(mod, assigned_locations)
 
     mod.clear_items()
@@ -1121,4 +1149,5 @@ if __name__ == '__main__':
             extra_eggs=args.extra_eggs,
             hide_unreachable=args.hide_unreachable,
             hide_difficulty=args.hide_difficulty,
+            shuffle_miriam_items=args.shuffle_miriam_items
         )

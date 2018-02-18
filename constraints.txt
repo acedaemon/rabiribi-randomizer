@@ -1283,6 +1283,48 @@ DARKNESS
 }
 
 {
+"location": "SPEED_BOOST",
+"accessibility": "free",
+"entry_prereq": "NONE",
+"exit_prereq": "NONE",
+}
+
+{
+"location": "SOUL_HEART",
+"accessibility": "free",
+"entry_prereq": "NONE",
+"exit_prereq": "NONE",
+}
+
+{
+"location": "HEALING_STAFF",
+"accessibility": "free",
+"entry_prereq": "NONE",
+"exit_prereq": "NONE",
+}
+
+{
+"location": "BOOK_OF_CARROT",
+"accessibility": "free",
+"entry_prereq": "NONE",
+"exit_prereq": "NONE",
+}
+
+{
+"location": "MAX_BRACELET",
+"accessibility": "free",
+"entry_prereq": "NONE",
+"exit_prereq": "NONE",
+}
+
+{
+"location": "BUNNY_STRIKE",
+"accessibility": "free",
+"entry_prereq": "SLIDING_POWDER",
+"exit_prereq": "SLIDING_POWDER",
+}
+
+{
 "location": "HP_UP_VOLCANIC",
 "accessibility": "far",
 "entry_prereq": "CARROT_BOMB | CARROT_SHOOTER",
