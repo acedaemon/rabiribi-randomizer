@@ -31,6 +31,8 @@ def parse_args():
     args.add_argument('--no-laggy-backgrounds', action='store_true', help='Don\'t include laggy backgrounds in background shuffle.')
     args.add_argument('--no-difficult-backgrounds', action='store_true', help='Don\'t include backgrounds in background shuffle that interfere with visibility.')
     args.add_argument('--super-attack-mode', action='store_true', help='Start the game with a bunch of attack ups, so you do lots more damage.')
+    args.add_argument('--hyper-attack-mode', action='store_true', help='Like Super Attack Mode, but with 35 attack ups.')
+    args.add_argument('--open-mode', action='store_true', help='Removes prologue triggers that restrict exploration.')
     args.add_argument('--hide-unreachable', action='store_true', help='Hide list of unreachable items. Affects seed.')
     args.add_argument('--hide-difficulty', action='store_true', help='Hide difficulty rating. Affects seed.')
     args.add_argument('--egg-goals', action='store_true', help='Egg goals mode. Hard-to-reach items are replaced with easter eggs. All other eggs are removed from the map.')
@@ -66,6 +68,16 @@ def define_variables(item_names):
 def define_custom_items():
     # Generally used for items that require you to exit to the shop before you can fully utilize it
     return {
+        "CARROT_BOMB_ENTRY": {
+            "accessibility": "free",
+            "entry_prereq": "CARROT_BOMB",
+            "exit_prereq": "NONE",
+        },
+        "CARROT_SHOOTER_ENTRY": {
+            "accessibility": "free",
+            "entry_prereq": "CARROT_SHOOTER",
+            "exit_prereq": "NONE",
+        },
         "WALL_JUMP_LV2": {
             "accessibility": "free",
             "entry_prereq": "WALL_JUMP & SHOP",
@@ -835,15 +847,24 @@ def run_item_randomizer(seed=None, config_file='config.txt', egg_goals=False):
     location_map = randomize(items, locations, variables, to_shuffle, must_be_reachable, constraints, seed=seed, egg_goals=egg_goals)
     return location_map.compute_item_locations()
 
+def apply_item_specific_fixes(mod, assigned_locations):
+    item_at_location = dict(((location, item) for item, location in assigned_locations.items()))
+
+    if is_egg(item_at_location['PURE_LOVE']):
+        data = mod.stored_datas[1]
+        data.tiledata_event[xy_to_index(404,12)] = 3
+
+    if is_egg(item_at_location['ATK_UP_SNOWLAND']):
+        data = mod.stored_datas[3]
+        data.tiledata_event[xy_to_index(93,119)] = 3
+
+    if is_egg(item_at_location['HP_UP_NORTH_FOREST']):
+        data = mod.stored_datas[0]
+        data.tiledata_map[xy_to_index(271,51)] = 0
+        data.tiledata_tiles1[xy_to_index(271,51)] = 0
+
 def apply_fixes_for_randomizer(areaid, data):
     if areaid == 0:
-        # Add warp CS trigger to enable warps from start of game.
-        for y in range(79,100):
-            data.tiledata_event[xy_to_index(125,y)] = 524
-            data.tiledata_event[xy_to_index(126,y)] = 525
-            data.tiledata_event[xy_to_index(127,y)] = 281
-            data.tiledata_event[xy_to_index(128,y)] = 524
-
         # Remove save point and autosave point before Cocoa1
         for y in range(84,88):
             data.tiledata_event[xy_to_index(358,y)] = 0
@@ -874,36 +895,77 @@ def apply_fixes_for_randomizer(areaid, data):
         for y in range(186,189):
             data.tiledata_event[xy_to_index(310,y)] = 0
 
-def apply_super_attack_mode(areaid, data):
+    if areaid == 8:
+        # Remove autosaves from warp destination
+        data.tiledata_event = [0 if x==42 else x for x in data.tiledata_event]
+
+def apply_open_mode_fixes(areaid, data):
+    # Prologue triggers that prevent you from getting past many areas
+    data.tiledata_event = [0 if x==300 else x for x in data.tiledata_event]
+
+    if areaid == 0:
+        # Trigger blocking going to beach from start
+        data.tiledata_event = [0 if x==301 else x for x in data.tiledata_event]
+
+def configure_shaft(mod, apply_fixes, open_mode, super_attack_mode, hyper_attack_mode):
+    events_list = []
+
+    if apply_fixes:
+        # Turn on warp stones from the start
+        events_list += [(525,), (281,), (524,)]
+
+    if open_mode:
+        # Add ribbon
+        events_list.append((558, 5008, 5001))
+
+    # Add attack ups
+    if hyper_attack_mode:
+        for i in range(0,30):
+            events_list.append((558, 5223-i, 5001))
+        print('Hyper attack mode applied')
+    elif super_attack_mode:
+        for i in range(0,20):
+            events_list.append((558, 5223-i, 5001))
+        print('Super attack mode applied')
+
+    # Build shaft only if there is something to build.
+    if len(events_list) > 0:
+        for areaid, data in mod.stored_datas.items():
+            build_start_game_shaft(areaid, data, events_list)
+
+
+def build_start_game_shaft(areaid, data, events_list):
     # area 0 only.
     if areaid != 0: return
-    
-    ATTACK_UP_COUNT = 20
 
+    MAX_EVENTS = 37
+    EVENT_COUNT = len(events_list)
+    if EVENT_COUNT > MAX_EVENTS:
+        fail('Too many events in start game shaft: %d/%d' % (EVENT_COUNT, MAX_EVENTS))
+    
     # EV_MOVEDOWN event to move erina down to start position
     data.tiledata_event[xy_to_index(111,43)] = 554
 
-    # Place attack up get events
-    for i in range(0,ATTACK_UP_COUNT):
-        y = 42 - i
-        data.tiledata_event[xy_to_index(111,y)] = 558
-        data.tiledata_event[xy_to_index(112,y)] = 5223 - i
-        data.tiledata_event[xy_to_index(113,y)] = 5001
+    # Place events in shaft
+    for i, ev_tuple in enumerate(events_list):
+        y = 43 - EVENT_COUNT + i
+        for dx, ev in enumerate(ev_tuple):
+            data.tiledata_event[xy_to_index(111+dx,y)] = ev
 
     # Remove old start event
     data.tiledata_event[xy_to_index(113,98)] = 0
     # Place new start event
-    data.tiledata_event[xy_to_index(111,42-ATTACK_UP_COUNT)] = 34
+    data.tiledata_event[xy_to_index(111,42-EVENT_COUNT)] = 34
 
     # Add collision data
     data.tiledata_map[xy_to_index(110,44)] = 1
     data.tiledata_map[xy_to_index(111,44)] = 1
     data.tiledata_map[xy_to_index(112,44)] = 1
-    for i in range(0,ATTACK_UP_COUNT+5):
+    for i in range(0,EVENT_COUNT+5):
         y = 43-i
         data.tiledata_map[xy_to_index(110,y)] = 1
         data.tiledata_map[xy_to_index(112,y)] = 1
-    data.tiledata_map[xy_to_index(111,43-ATTACK_UP_COUNT-4)] = 1
+    data.tiledata_map[xy_to_index(111,43-EVENT_COUNT-4)] = 1
 
     # Blanket with black graphical tiles
     for y in range(0,45):
@@ -917,12 +979,17 @@ def apply_super_attack_mode(areaid, data):
 
 
 
-def pre_modify_map_data(mod, apply_fixes, shuffle_music, shuffle_backgrounds, no_laggy_backgrounds, no_difficult_backgrounds, super_attack_mode):
+def pre_modify_map_data(mod, apply_fixes, open_mode, shuffle_music, shuffle_backgrounds, no_laggy_backgrounds, no_difficult_backgrounds, super_attack_mode, hyper_attack_mode):
     # apply rando fixes
     if apply_fixes:
         for areaid, data in mod.stored_datas.items():
             apply_fixes_for_randomizer(areaid, data)
         print('Map fixes applied')
+
+    if open_mode:
+        for areaid, data in mod.stored_datas.items():
+            apply_open_mode_fixes(areaid, data)
+        print('Open mode applied')
 
     # Note: because musicrandomizer requires room color info, the music
     # must be shuffled before the room colors!
@@ -933,11 +1000,8 @@ def pre_modify_map_data(mod, apply_fixes, shuffle_music, shuffle_backgrounds, no
     if shuffle_backgrounds:
         backgroundrandomizer.shuffle_backgrounds(mod.stored_datas, no_laggy_backgrounds, no_difficult_backgrounds)
 
-    # super attack mode
-    if super_attack_mode:
-        for areaid, data in mod.stored_datas.items():
-            apply_super_attack_mode(areaid, data)
-        print('Super attack mode applied')
+    # Add shaft if needed
+    configure_shaft(mod=mod, apply_fixes=apply_fixes, open_mode=open_mode, super_attack_mode=super_attack_mode, hyper_attack_mode=hyper_attack_mode)
 
 def remove_non_goal_eggs(analyzer, assigned_locations, items, extra_eggs):
     all_eggs = set(filter(is_egg, assigned_locations.keys()))
@@ -956,7 +1020,7 @@ def remove_non_goal_eggs(analyzer, assigned_locations, items, extra_eggs):
 def get_default_areaids():
     return list(range(10))
 
-def generate_randomized_maps(seed, source_dir, output_dir, config_file, write_to_map_files, shuffle_music, shuffle_backgrounds, no_laggy_backgrounds, no_difficult_backgrounds, super_attack_mode, apply_fixes, egg_goals, extra_eggs, hide_unreachable, hide_difficulty):
+def generate_randomized_maps(seed, source_dir, output_dir, config_file, write_to_map_files, shuffle_music, shuffle_backgrounds, no_laggy_backgrounds, no_difficult_backgrounds, super_attack_mode, hyper_attack_mode, apply_fixes, open_mode, egg_goals, extra_eggs, hide_unreachable, hide_difficulty):
     if write_to_map_files and not os.path.isdir(output_dir):
         fail('Output directory %s does not exist' % output_dir)
 
@@ -965,7 +1029,7 @@ def generate_randomized_maps(seed, source_dir, output_dir, config_file, write_to
     assert len(set(item.areaid for item in items) - set(areaids)) == 0
     if egg_goals:
         items = remove_non_goal_eggs(analyzer, assigned_locations, items, extra_eggs)
-
+    
     #print_allocation(assigned_locations)
     #print_analysis(analyzer, assigned_locations)
     #warnings = get_all_warnings(assigned_locations)
@@ -986,7 +1050,8 @@ def generate_randomized_maps(seed, source_dir, output_dir, config_file, write_to
     itemreader.grab_original_maps(source_dir, output_dir)
     print('Maps copied...')
     mod = itemreader.ItemModifier(areaids, source_dir=source_dir, no_load=True)
-    pre_modify_map_data(mod, apply_fixes=apply_fixes, shuffle_music=shuffle_music, shuffle_backgrounds=shuffle_backgrounds, no_laggy_backgrounds=no_laggy_backgrounds, no_difficult_backgrounds=no_difficult_backgrounds, super_attack_mode=super_attack_mode)
+    pre_modify_map_data(mod, apply_fixes=apply_fixes, open_mode=open_mode, shuffle_music=shuffle_music, shuffle_backgrounds=shuffle_backgrounds, no_laggy_backgrounds=no_laggy_backgrounds, no_difficult_backgrounds=no_difficult_backgrounds, super_attack_mode=super_attack_mode, hyper_attack_mode=hyper_attack_mode)
+    apply_item_specific_fixes(mod, assigned_locations)
 
     mod.clear_items()
     for item in items:
@@ -1048,7 +1113,9 @@ if __name__ == '__main__':
             no_laggy_backgrounds=args.no_laggy_backgrounds,
             no_difficult_backgrounds=args.no_difficult_backgrounds,
             super_attack_mode=args.super_attack_mode,
+            hyper_attack_mode=args.hyper_attack_mode,
             apply_fixes=args.apply_fixes,
+            open_mode=args.open_mode,
             egg_goals=args.egg_goals,
             extra_eggs=args.extra_eggs,
             hide_unreachable=args.hide_unreachable,
