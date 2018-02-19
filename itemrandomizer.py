@@ -917,6 +917,13 @@ def apply_event_item_fixes(areaid, data):
         for (x,y) in t_collision:
             data.tiledata_map[xy_to_index(x,y)] = 1
             data.tiledata_tiles1[xy_to_index(x,y)] = 33
+        # Make the main room look consistent
+        data.tiledata_tiles1[xy_to_index(180,118)] = 570
+        data.tiledata_tiles1[xy_to_index(181,118)] = 570
+        data.tiledata_tiles1[xy_to_index(182,118)] = -571
+        data.tiledata_tiles1[xy_to_index(180,121)] = 5570
+        data.tiledata_tiles1[xy_to_index(181,121)] = 5570
+        data.tiledata_tiles1[xy_to_index(182,121)] = 5570
         # TODO: make it pretty
 
 def configure_shaft(mod, apply_fixes, open_mode, super_attack_mode, hyper_attack_mode, apply_miriam_fixes):
