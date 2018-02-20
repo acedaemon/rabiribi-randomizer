@@ -1325,6 +1325,13 @@ DARKNESS
 }
 
 {
+"location": "P_HAIRPIN",
+"accessibility": "vfar",
+"entry_prereq": "NONE",
+"exit_prereq": "NONE",
+}
+
+{
 "location": "HP_UP_VOLCANIC",
 "accessibility": "far",
 "entry_prereq": "CARROT_BOMB | CARROT_SHOOTER",
