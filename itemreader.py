@@ -8,6 +8,7 @@ MAP_ROOMTYPE_OFFSET = 400000
 MAP_ROOMCOLOR_OFFSET = 400900
 MAP_ROOMBG_OFFSET = 401800
 MAP_ITEMS_OFFSET = 402700
+MAP_TILES0_OFFSET = 602704
 MAP_TILES1_OFFSET = 802704
 MAP_TILES2_OFFSET = 1002704
 MAP_TILES3_OFFSET = 1202704
@@ -92,6 +93,7 @@ def write_all(areaid, items, stored_data, path='.'):
     tiledata_tiles1 = list(stored_data.tiledata_tiles1)
     tiledata_tiles5 = list(stored_data.tiledata_tiles5)
     tiledata_tiles2 = list(stored_data.tiledata_tiles2)
+    tiledata_tiles0 = list(stored_data.tiledata_tiles0)
     
     # Note: read from stored data, write to actual data
     for item in items:
@@ -140,6 +142,8 @@ def write_all(areaid, items, stored_data, path='.'):
     f.write(struct.pack('%dh' % MAP_SIZE, *tiledata_tiles5))
     f.seek(MAP_TILES2_OFFSET)
     f.write(struct.pack('%dh' % MAP_SIZE, *tiledata_tiles2))
+    f.seek(MAP_TILES0_OFFSET)
+    f.write(struct.pack('%dh' % MAP_SIZE, *tiledata_tiles0))
     f.close()
     
 
@@ -250,6 +254,8 @@ class StoredMapData(object):
         self.tiledata_tiles5 = list(struct.unpack('%dh' % MAP_SIZE, f.read(MAP_SIZE*2)))
         f.seek(MAP_TILES2_OFFSET)
         self.tiledata_tiles2 = list(struct.unpack('%dh' % MAP_SIZE, f.read(MAP_SIZE*2)))
+        f.seek(MAP_TILES0_OFFSET)
+        self.tiledata_tiles0 = list(struct.unpack('%dh' % MAP_SIZE, f.read(MAP_SIZE*2)))
         f.close()
 
     def clear_items(self):

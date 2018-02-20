@@ -937,12 +937,24 @@ def apply_event_item_fixes(areaid, data):
         for (x,y) in t_clear:
             data.tiledata_map[xy_to_index(x,y)] = 0
             data.tiledata_tiles1[xy_to_index(x,y)] = 0
-            data.tiledata_tiles2[xy_to_index(x,y)] = 0
             # XXX layer 0 has garbage tiles but does not impair visibility
+        data.tiledata_tiles2[xy_to_index(222,38)] = 0
+        data.tiledata_tiles2[xy_to_index(222,39)] = 0
+        data.tiledata_tiles0[xy_to_index(221,35)] = 0
+        data.tiledata_tiles0[xy_to_index(219,38)] = 0
 
         # Add softlocking boss trigger
         data.tiledata_event[xy_to_index(220,38)] = 452
         data.tiledata_event[xy_to_index(220,39)] = 452
+        # Hide tiles when in expansion
+        data.tiledata_event[xy_to_index(221,38)] = 193
+        data.tiledata_event[xy_to_index(221,39)] = 193
+        data.tiledata_event[xy_to_index(222,38)] = 194
+        data.tiledata_event[xy_to_index(222,39)] = 194
+
+        # Prettify and make the hole clearer
+        data.tiledata_tiles2[xy_to_index(221,38)] = -1589
+        data.tiledata_tiles2[xy_to_index(221,39)] = -1589
 
 
 def configure_shaft(mod, apply_fixes, open_mode, super_attack_mode, hyper_attack_mode, event_item_fixes):
